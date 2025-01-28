@@ -1,0 +1,139 @@
+enum UserStatus {
+    INVITED
+    VERIFIED
+}
+
+model User {
+    id              String     @id @default(uuid())
+    name            String?
+    email           String?    @unique
+    pictureUrl      String?    @default('https://i.imgur.com/ZdJSK3Y.jpeg')
+    tokenInvitation String?
+
+    status          UserStatus @default(VERIFIED)
+
+    // this is the role of the user for the application
+    globalRole      String     @default('USER')
+    password        String?    @password @omit
+    createdAt       DateTime   @default(now())
+    updatedAt       DateTime   @updatedAt @default(now())
+
+    phone           String
+    alternateNumber String?
+    bookings        Booking[]  @relation("user")
+
+    @@auth()
+    @@allow("all", auth().id == this.id)
+    @@allow('all', auth().globalRole == 'ADMIN')
+
+    //we only allow that user to register if they don't create an admin role
+    @@allow("create", globalRole != 'ADMIN')
+    @@allow("read", true)
+}
+
+model Course {
+
+    id             String          @id @default(uuid())
+    name           String
+    description    String?
+    duration       Float
+
+    studentCourses StudentCourse[] @relation("course")
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Accommodation {
+
+    id                    String                 @id @default(uuid())
+    name                  String
+    type                  String
+    description           String?
+
+    bookingAccommodations BookingAccommodation[] @relation("accommodation")
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Student {
+
+    id                 String          @id @default(uuid())
+    name               String
+    email              String
+    phone              String?
+    alternateNumber    String?
+    eduportStatus      String?
+    registrationNumber String?
+    uniqueId           String?
+
+    parents            Parent[]        @relation("student")
+    bookings           Booking[]       @relation("student")
+    studentCourses     StudentCourse[] @relation("student")
+    createdAt          DateTime        @default(now())
+    updatedAt          DateTime        @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Parent {
+
+    id              String   @id @default(uuid())
+    name            String
+    email           String
+    phone           String?
+    alternateNumber String?
+
+    studentId       String
+    student         Student? @relation(fields: [studentId], references: [id], name: "student")
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Booking {
+
+    id                    String                 @id @default(uuid())
+    bookingFee            String
+    status                String
+    receiptNumber         String?
+    scholarshipPreference Boolean
+
+    userId                String
+    user                  User?                  @relation(fields: [userId], references: [id], name: "user")
+    studentId             String
+    student               Student?               @relation(fields: [studentId], references: [id], name: "student")
+    bookingAccommodations BookingAccommodation[] @relation("booking")
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model BookingAccommodation {
+
+    id              String         @id @default(uuid())
+    status          String
+
+    bookingId       String
+    booking         Booking?       @relation(fields: [bookingId], references: [id], name: "booking")
+    accommodationId String
+    accommodation   Accommodation? @relation(fields: [accommodationId], references: [id], name: "accommodation")
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model StudentCourse {
+
+    id        String   @id @default(uuid())
+    status    String
+
+    studentId String
+    student   Student? @relation(fields: [studentId], references: [id], name: "student")
+    courseId  String
+    course    Course?  @relation(fields: [courseId], references: [id], name: "course")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt @default(now())
+    @@allow("all", true)
+}
+
